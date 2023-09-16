@@ -9,7 +9,7 @@ def main():
     client_socket.connect((host, port))
     message = input("--> ")
 
-    while message.lower().strip() == 'exit':
+    while message.lower().strip() != 'exit':
         client_socket.send(message.encode())
         msg = client_socket.recv(1024).decode()
         print(f"Received message: {msg}")

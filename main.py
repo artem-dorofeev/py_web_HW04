@@ -3,10 +3,15 @@ import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import mimetypes
 import json
+import socket
+import logging
+from threading import Thread
 
 from jinja2 import Environment, FileSystemLoader
 
 BASE_DIR = pathlib.Path()
+SERV_IP = '127.0.0.1'
+SERV_PORT = 5000
 env = Environment(loader=FileSystemLoader('templates'))
 
 
@@ -60,6 +65,7 @@ class HttpGetHandler(BaseHTTPRequestHandler):
         with open(BASE_DIR.joinpath('data/blog.json'), 'r', encoding='utf-8') as fd:
             r = json.load(fd)
         template = env.get_template(filename)
+        print(template)
         html = template.render(blogs=r)
         self.wfile.write(html.encode())
 
@@ -78,6 +84,26 @@ def run(server_class=HTTPServer, handler_class=HttpGetHandler):
     except KeyboardInterrupt:
         http.server_close()
 
+def run_socket_server(ip, port):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    server = ip, port
+    server_socket.bind(server)
+    server_socket.listen()
+    try:
+        while True:
+            data, address = server_socket.recv(1024)
+            save_data(data)
+    except KeyboardInterrupt:
+        logging.info('Socket server stopped')
+    finally:
+        server_socket.close()
+
 
 if __name__ == '__main__':
-    run()
+    logging.basicConfig(level=logging.INFO, format="%(threadName)s %(message)s")
+    # run()
+    thread_server = Thread(target=run)
+    thread_server.start()
+
+    thread_socket = Thread(target=run_socket_server(SERV_IP, SERV_PORT))
+    thread_socket.start()
