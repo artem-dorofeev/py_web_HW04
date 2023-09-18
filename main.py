@@ -10,7 +10,8 @@ from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader
 
-BASE_DIR = pathlib.Path()
+BASE_DIR = pathlib.Path('html-data')
+# print(f'14 - base_dir - {BASE_DIR}')
 BUFFER = 1024
 SERV_IP = '127.0.0.1'
 SERV_PORT = 5000
@@ -37,15 +38,15 @@ class HttpGetHandler(BaseHTTPRequestHandler):
 
         match route.path:
             case "/":
-                self.send_html_file("index.html")
+                self.send_html_file('html-data/index.html')
             case "/message.html":
-                self.send_html_file("message.html")
+                self.send_html_file('html-data/message.html')
             case _:
                 file = BASE_DIR / route.path[1:]
                 if file.exists():
                     self.send_static(file)
                 else:
-                    self.send_html_file("error.html", 404)
+                    self.send_html_file('html-data/error.html', 404)
 
 
     def send_static(self, file):
@@ -66,36 +67,23 @@ class HttpGetHandler(BaseHTTPRequestHandler):
         with open(filename, 'rb') as fb:
             self.wfile.write(fb.read())
 
-    # def render_template(self, filename, status=200):
-    #     self.send_response(status)
-    #     self.send_header('Content-type', 'text/html')
-    #     self.end_headers()
-    #     with open(BASE_DIR.joinpath('data/blog.json'), 'r', encoding='utf-8') as fd:
-    #         r = json.load(fd)
-    #     template = env.get_template(filename)
-    #     print(template)
-    #     html = template.render(blogs=r)
-    #     self.wfile.write(html.encode())
-
-    # def save_data_to_json(self, data):
-    #     data_parse = urllib.parse.unquote_plus(data.decode())
-    #     data_parse = {key: value for key, value in [el.split('=') for el in data_parse.split('&')]}
-    #     with open(BASE_DIR.joinpath('data/data.json'), 'w', encoding='utf-8') as fd:
-    #         json.dump(data_parse, fd, ensure_ascii=False)
 
 
 def save_data(data):
     body = urllib.parse.unquote_plus(data.decode())
+    # print(f'74  {data}')
 
     value = {kay: value for kay, value in [el.split("=") for el in body.split("&")]}
     payload = {str(datetime.now()): value}
     try:
         with open(BASE_DIR.joinpath("storage/data.json"), "r", encoding="utf-8") as fd:
+            # print(f'80 try, base_dir - {BASE_DIR}')
             old_data = json.load(fd)
     except FileNotFoundError:
         old_data = {}
     payload.update(old_data)
     with open(BASE_DIR.joinpath("storage/data.json"), "w", encoding="utf-8") as fd:
+        # print(f'86 try, base_dir - {BASE_DIR}')
         json.dump(payload, fd, ensure_ascii=False, indent=2)
 
 
@@ -115,7 +103,6 @@ def run_socket_server(ip, port):
     try:
         while True:
             data, address = server_socket.recvfrom(BUFFER)
-            # print(f'000000 11111111 Receive data {data}')
             save_data(data)
     except KeyboardInterrupt:
         logging.info('Socket server stopped')
@@ -125,9 +112,12 @@ def run_socket_server(ip, port):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format="%(threadName)s %(message)s")
-    STORAGE_DIR = pathlib.Path().joinpath('data')
+    STORAGE_DIR = pathlib.Path().joinpath('html-data/storage')
     FILE_STORAGE = STORAGE_DIR / 'data.json'
+
+    # print(113, STORAGE_DIR, FILE_STORAGE)
     if not FILE_STORAGE.exists():
+
         with open(FILE_STORAGE, "w", encoding="utf-8") as fd:
             json.dump({}, fd, ensure_ascii=False, indent=2)
 
@@ -137,3 +127,5 @@ if __name__ == '__main__':
 
     thread_socket = Thread(target=run_socket_server(SERV_IP, SERV_PORT))
     thread_socket.start()
+
+    """BASE_DIR.joinpath("storage/data.json"""
